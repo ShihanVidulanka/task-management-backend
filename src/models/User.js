@@ -1,29 +1,51 @@
+// models/User.js
 const supabase = require('../config/supabaseClient');
 
 class User {
-  static async create({ email, password }) {
+  static async signUp({ email, password }) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password
+      });
 
-    
-    let { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: password
-    })
-    if (error) throw error;
+      if (error) {
+        console.error("Error during sign up:", error);
+        throw error;
+      }
 
-    console.log(data);
-    const { data, error_saved } = await supabase.from('users').insert([{ email, password }]);
-    if (error) throw error_saved;
-    return data[0];
+      // Optionally save user data in a 'users' table
+      const { error: dbError } = await supabase.from('users').insert([{ email }]);
+
+      if (dbError) {
+        console.error("Error saving user to database:", dbError);
+        throw dbError;
+      }
+
+      return data.user;
+    } catch (error) {
+      console.error("Sign up failed:", error);
+      throw error;
+    }
   }
 
-  static async findOneByEmail(email) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-    if (error) throw error;
-    return data;
+  static async signIn({ email, password }) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error("Error during sign in:", error);
+        throw error;
+      }
+
+      return data.user;
+    } catch (error) {
+      console.error("Sign in failed:", error);
+      throw error;
+    }
   }
 
   static async findById(id) {
